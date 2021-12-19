@@ -1,0 +1,48 @@
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: pyspark-job-gcp1
+  namespace: processing
+spec:
+  type: Python
+  mode: cluster
+  image: arthexbr77/pyspark_gcp_connectors:3.1.1
+  imagePullPolicy: Always
+  mainApplicationFile: 'local:///app/spark_job.py'
+  sparkVersion: '3.1.1'
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  hadoopConf:
+    'fs.gs.project.id': 'gcp-f1-pipeline'
+    'fs.gs.system.bucket': 'dp-landing-zone'
+    "google.cloud.auth.service.account.enable": "true"
+    'google.cloud.auth.service.account.json.keyfile': '/mnt/secrets/key.json'
+  driver:
+    coreRequest: 250m
+    coreLimit: '1200m'
+    memory: '512m'
+    secrets:
+    - name: 'gcs-key'
+      path: '/mnt/secrets'
+      secretType: GCPServiceAccount
+    serviceAccount: default
+    labels:
+      version: 3.0.0
+    envVars:
+      GCS_PROJECT_ID: gcp-f1-pipeline
+  executor:
+    coreRequest: 250m
+    instances: 2
+    memory: '512m'
+    secrets:
+    - name: 'gcs-key'
+      path: '/mnt/secrets'
+      secretType: GCPServiceAccount
+    labels:
+      version: 3.0.0
+    envVars:
+      GCS_PROJECT_ID: gcp-f1-pipeline
